@@ -1,0 +1,13 @@
+# sr2_teleop.launch.yaml
+
+launch:
+
+- node:
+    pkg: "sr2_teleop"
+    exec: "start_reading"
+    name: "teleop"
+  
+- node:
+    pkg: "sr2_teleop"
+    exec: "start_control"
+    name: "teleop_control"

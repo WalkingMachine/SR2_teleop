@@ -1,6 +1,6 @@
-import inputs
 from threading import Thread
-
+from importlib import reload
+import inputs
 
 class XBoxControllerReader(Thread):
     """
@@ -33,10 +33,9 @@ class XBoxControllerReader(Thread):
     }
 
     def __init__(self, callback, accuracy=4, read_rate=0.1, left_joy_tolerance=0.2, right_joy_tolerance=0.2,
-                 left_trigger_tolerance=0.05, right_trigger_tolerance=0.05) -> None:
-        super().__init__()
+                 left_trigger_tolerance=0.1, right_trigger_tolerance=0.1) -> None:
+        super().__init__(daemon=True)
         self.callback_function = callback
-        self._GAMEPAD = inputs.devices.gamepads[0]
 
         # Precision (decimal points)
         self._ACCURACY = accuracy
@@ -83,76 +82,72 @@ class XBoxControllerReader(Thread):
         # Running Flag
         self.is_running = False
 
+        self.start()
+
     def __del__(self):
         self.stop()
 
-    def start(self):
-        self.is_running = True
-        super().start()
-
     def run(self):
+        reload(inputs)
+        self.is_running = True
         while self.is_running:
             try:
-                events = self._GAMEPAD.read()
-                for index, event in enumerate(events):
-                    if event.code is self._key_map["JOY_LX"]:
-                        rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
-                        self.joy_lx = rel_value if abs(rel_value) >= self.left_joy_tolerance else 0
-                    elif event.code is self._key_map["JOY_LY"]:
-                        rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
-                        self.joy_ly = rel_value if abs(rel_value) >= self.left_joy_tolerance else 0
-                    elif event.code is self._key_map["JOY_RX"]:
-                        rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
-                        self.joy_rx = rel_value if abs(rel_value) >= self.right_joy_tolerance else 0
-                    elif event.code is self._key_map["JOY_RY"]:
-                        rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
-                        self.joy_ry = rel_value if abs(rel_value) >= self.right_joy_tolerance else 0
-                    elif event.code is self._key_map["DPAD_X"]:
-                        self.dpad_x = event.state
-                    elif event.code is self._key_map["DPAD_Y"]:
-                        self.dpad_y = event.state
-                    elif event.code is self._key_map["L_TRIGGER"]:
-                        rel_value = round(event.state / self._TRIGGER_MAX_VAL, self._ACCURACY)
-                        self.l_trigger = rel_value if rel_value >= self.left_trigger_tolerance else 0
-                    elif event.code is self._key_map["R_TRIGGER"]:
-                        rel_value = round(event.state / self._TRIGGER_MAX_VAL, self._ACCURACY)
-                        self.r_trigger = rel_value if rel_value >= self.right_trigger_tolerance else 0
-                    elif event.code is self._key_map["X"]:
-                        self.x = event.state
-                    elif event.code is self._key_map["Y"]:
-                        self.y = event.state
-                    elif event.code is self._key_map["A"]:
-                        self.a = event.state
-                    elif event.code is self._key_map["B"]:
-                        self.b = event.state
-                    elif event.code is self._key_map["BACK"]:
-                        self.back = event.state
-                    elif event.code is self._key_map["START"]:
-                        self.start_ = event.state
-                    elif event.code is self._key_map["XBOX"]:
-                        self.xbox = event.state
-                    elif event.code is self._key_map["L_BUMPER"]:
-                        self.l_bumper = event.state
-                    elif event.code is self._key_map["R_BUMPER"]:
-                        self.r_bumper = event.state
-                    elif event.code is self._key_map["L_THUMB"]:
-                        self.l_thumb = event.state
-                    elif event.code is self._key_map["R_THUMB"]:
-                        self.r_thumb = event.state
+                events = inputs.get_gamepad()
+            except Exception as e:
+                self.is_running = False
+                break
+            for index, event in enumerate(events):
+                if event.code is self._key_map["JOY_LX"]:
+                    rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
+                    self.joy_lx = rel_value if abs(rel_value) >= self.left_joy_tolerance else 0
+                elif event.code is self._key_map["JOY_LY"]:
+                    rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
+                    self.joy_ly = rel_value if abs(rel_value) >= self.left_joy_tolerance else 0
+                elif event.code is self._key_map["JOY_RX"]:
+                    rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
+                    self.joy_rx = rel_value if abs(rel_value) >= self.right_joy_tolerance else 0
+                elif event.code is self._key_map["JOY_RY"]:
+                    rel_value = round(event.state / self._JOY_MAX_VAL, self._ACCURACY)
+                    self.joy_ry = rel_value if abs(rel_value) >= self.right_joy_tolerance else 0
+                elif event.code is self._key_map["DPAD_X"]:
+                    self.dpad_x = event.state
+                elif event.code is self._key_map["DPAD_Y"]:
+                    self.dpad_y = event.state
+                elif event.code is self._key_map["L_TRIGGER"]:
+                    rel_value = round(event.state / self._TRIGGER_MAX_VAL, self._ACCURACY)
+                    self.l_trigger = rel_value if rel_value >= self.left_trigger_tolerance else 0
+                elif event.code is self._key_map["R_TRIGGER"]:
+                    rel_value = round(event.state / self._TRIGGER_MAX_VAL, self._ACCURACY)
+                    self.r_trigger = rel_value if rel_value >= self.right_trigger_tolerance else 0
+                elif event.code is self._key_map["X"]:
+                    self.x = event.state
+                elif event.code is self._key_map["Y"]:
+                    self.y = event.state
+                elif event.code is self._key_map["A"]:
+                    self.a = event.state
+                elif event.code is self._key_map["B"]:
+                    self.b = event.state
+                elif event.code is self._key_map["BACK"]:
+                    self.back = event.state
+                elif event.code is self._key_map["START"]:
+                    self.start_ = event.state
+                elif event.code is self._key_map["XBOX"]:
+                    self.xbox = event.state
+                elif event.code is self._key_map["L_BUMPER"]:
+                    self.l_bumper = event.state
+                elif event.code is self._key_map["R_BUMPER"]:
+                    self.r_bumper = event.state
+                elif event.code is self._key_map["L_THUMB"]:
+                    self.l_thumb = event.state
+                elif event.code is self._key_map["R_THUMB"]:
+                    self.r_thumb = event.state
 
-                self.callback_function(self.read())
-            except Exception:
-                ...
-
+            self.callback_function(self.read())
 
     def stop(self):
         self.is_running = False
         if self.is_alive():
             self.join()
-
-    def restart(self):
-        self.stop()
-        self.start()
 
     def read(self):
         return {
